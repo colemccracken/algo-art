@@ -350,7 +350,7 @@
 
         #canvas-container {
             width: 100%;
-            max-width: 1000px;
+            max-width: 920px;
             border-radius: 12px;
             overflow: hidden;
             box-shadow: 0 20px 40px rgba(20, 20, 19, 0.1);
@@ -366,7 +366,7 @@
         #gallery-panel,
         #param-gallery-panel {
             width: 100%;
-            max-width: 1000px;
+            max-width: 920px;
             background: rgba(255, 255, 255, 0.9);
             border: 1px solid var(--anthropic-light-gray);
             border-radius: 12px;
@@ -673,9 +673,6 @@
 
         <!-- Main Canvas Area -->
         <div class="canvas-area">
-            <div id="canvas-container">
-                <div class="loading">Initializing generative art...</div>
-            </div>
             <div id="gallery-panel">
                 <div class="gallery-head">
                     <div class="gallery-title">Seed Gallery 1-100</div>
@@ -691,6 +688,9 @@
                 </div>
                 <div class="gallery-status" id="param-gallery-status">Click "Param Gallery 1-100" to generate previews.</div>
                 <div class="gallery-grid" id="param-gallery-grid"></div>
+            </div>
+            <div id="canvas-container">
+                <div class="loading">Initializing generative art...</div>
             </div>
         </div>
     </div>
