@@ -1,0 +1,1424 @@
+<!DOCTYPE html>
+<!--
+    THIS IS A TEMPLATE THAT SHOULD BE USED EVERY TIME AND MODIFIED.
+    WHAT TO KEEP:
+    ✓ Overall structure (header, sidebar, main content)
+    ✓ Anthropic branding (colors, fonts, layout)
+    ✓ Seed navigation section (always include this)
+    ✓ Self-contained artifact (everything inline)
+
+    WHAT TO CREATIVELY EDIT:
+    ✗ The p5.js algorithm (implement YOUR vision)
+    ✗ The parameters (define what YOUR art needs)
+    ✗ The UI controls (match YOUR parameters)
+
+    Let your philosophy guide the implementation.
+    The world is your oyster - be creative!
+-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generative Art Viewer</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&family=Lora:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        /* Anthropic Brand Colors */
+        :root {
+            --anthropic-dark: #141413;
+            --anthropic-light: #faf9f5;
+            --anthropic-mid-gray: #b0aea5;
+            --anthropic-light-gray: #e8e6dc;
+            --anthropic-orange: #d97757;
+            --anthropic-blue: #6a9bcc;
+            --anthropic-green: #788c5d;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, var(--anthropic-light) 0%, #f5f3ee 100%);
+            min-height: 100vh;
+            color: var(--anthropic-dark);
+        }
+
+        .container {
+            display: flex;
+            min-height: 100vh;
+            padding: 20px;
+            gap: 20px;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 320px;
+            flex-shrink: 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(20, 20, 19, 0.1);
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        .sidebar h1 {
+            font-family: 'Lora', serif;
+            font-size: 24px;
+            font-weight: 500;
+            color: var(--anthropic-dark);
+            margin-bottom: 8px;
+        }
+
+        .sidebar .subtitle {
+            color: var(--anthropic-mid-gray);
+            font-size: 14px;
+            margin-bottom: 32px;
+            line-height: 1.4;
+        }
+
+        /* Control Sections */
+        .control-section {
+            margin-bottom: 32px;
+        }
+
+        .accordion-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+
+        .accordion-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .accordion-toggle {
+            border: 1px solid var(--anthropic-light-gray);
+            background: white;
+            color: var(--anthropic-dark);
+            width: 24px;
+            height: 24px;
+            line-height: 22px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        .accordion-content {
+            margin-top: 10px;
+        }
+
+        .accordion-section.collapsed .accordion-content {
+            display: none;
+        }
+
+        .control-section h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--anthropic-dark);
+            margin-bottom: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .control-section h3::before {
+            content: '•';
+            color: var(--anthropic-orange);
+            font-weight: bold;
+        }
+
+        /* Seed Controls */
+        .seed-input {
+            width: 100%;
+            background: var(--anthropic-light);
+            padding: 12px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            margin-bottom: 12px;
+            border: 1px solid var(--anthropic-light-gray);
+            text-align: center;
+        }
+
+        .seed-input:focus {
+            outline: none;
+            border-color: var(--anthropic-orange);
+            box-shadow: 0 0 0 2px rgba(217, 119, 87, 0.1);
+            background: white;
+        }
+
+        .seed-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .regen-button {
+            margin-bottom: 0;
+        }
+
+        /* Parameter Controls */
+        .control-group {
+            margin-bottom: 20px;
+        }
+
+        .control-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--anthropic-dark);
+            margin-bottom: 8px;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .slider-container input[type="range"] {
+            flex: 1;
+            height: 4px;
+            background: var(--anthropic-light-gray);
+            border-radius: 2px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .slider-container input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: var(--anthropic-orange);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .slider-container input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+            background: #c86641;
+        }
+
+        .slider-container input[type="range"]::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            background: var(--anthropic-orange);
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .value-display {
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: var(--anthropic-mid-gray);
+            min-width: 60px;
+            text-align: right;
+        }
+
+        /* Color Pickers */
+        .color-group {
+            margin-bottom: 16px;
+        }
+
+        .color-group label {
+            display: block;
+            font-size: 12px;
+            color: var(--anthropic-mid-gray);
+            margin-bottom: 4px;
+        }
+
+        .color-picker-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .color-picker-container input[type="color"] {
+            width: 32px;
+            height: 32px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            background: none;
+            padding: 0;
+        }
+
+        .color-value {
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: var(--anthropic-mid-gray);
+        }
+
+        /* Buttons */
+        .button {
+            background: var(--anthropic-orange);
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            width: 100%;
+        }
+
+        .button:hover {
+            background: #c86641;
+            transform: translateY(-1px);
+        }
+
+        .button:active {
+            transform: translateY(0);
+        }
+
+        .button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .button.secondary {
+            background: var(--anthropic-blue);
+        }
+
+        .button.secondary:hover {
+            background: #5a8bb8;
+        }
+
+        .button.tertiary {
+            background: var(--anthropic-green);
+        }
+
+        .button.tertiary:hover {
+            background: #6b7b52;
+        }
+
+        .button-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        .button-row .button {
+            flex: 1;
+        }
+
+        .action-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .button.small {
+            width: auto;
+            padding: 6px 10px;
+            font-size: 12px;
+        }
+
+        /* Canvas Area */
+        .canvas-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 14px;
+            padding: 8px;
+            min-width: 0;
+            overflow-y: auto;
+        }
+
+        #canvas-container {
+            width: 100%;
+            max-width: 1000px;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(20, 20, 19, 0.1);
+            background: white;
+        }
+
+        #canvas-container canvas {
+            display: block;
+            width: 100% !important;
+            height: auto !important;
+        }
+
+        #gallery-panel,
+        #param-gallery-panel {
+            width: 100%;
+            max-width: 1000px;
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid var(--anthropic-light-gray);
+            border-radius: 12px;
+            box-shadow: 0 8px 18px rgba(20, 20, 19, 0.08);
+            padding: 14px;
+            display: none;
+        }
+
+        .gallery-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .gallery-title {
+            font-family: 'Lora', serif;
+            font-size: 18px;
+            color: var(--anthropic-dark);
+        }
+
+        .gallery-status {
+            font-size: 12px;
+            color: var(--anthropic-mid-gray);
+            margin-bottom: 10px;
+        }
+
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+            gap: 8px;
+            max-height: 360px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        .gallery-thumb {
+            border: 1px solid var(--anthropic-light-gray);
+            background: white;
+            border-radius: 8px;
+            padding: 4px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            cursor: pointer;
+            transition: all 0.18s ease;
+        }
+
+        .gallery-thumb:hover {
+            border-color: var(--anthropic-orange);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(20, 20, 19, 0.12);
+        }
+
+        .gallery-thumb img {
+            width: 100%;
+            display: block;
+            border-radius: 5px;
+        }
+
+        .gallery-label {
+            font-size: 11px;
+            color: var(--anthropic-dark);
+            text-align: center;
+        }
+
+        /* Loading State */
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: var(--anthropic-mid-gray);
+        }
+
+        /* Responsive - Stack on mobile */
+        @media (max-width: 600px) {
+            .container {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+            }
+
+            .canvas-area {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Control Sidebar -->
+        <div class="sidebar">
+            <!-- Headers (CUSTOMIZE THIS FOR YOUR ART) -->
+            <h1>Ribbon Drift</h1>
+            <div class="subtitle">Flow-field ribbons with segmented geometry inspired by plotter-era structure and controlled chaos.</div>
+            <div class="accordion-controls">
+                <button class="button secondary" onclick="expandAllAccordions()">Expand All</button>
+                <button class="button secondary" onclick="collapseAllAccordions()">Collapse All</button>
+            </div>
+
+            <!-- Seed Section (ALWAYS KEEP THIS) -->
+            <div class="control-section accordion-section" data-accordion="seed">
+                <div class="accordion-header" onclick="toggleAccordion('seed')">
+                    <h3>Seed</h3>
+                    <button id="accordion-toggle-seed" class="accordion-toggle" type="button" onclick="event.stopPropagation(); toggleAccordion('seed')" aria-expanded="true">−</button>
+                </div>
+                <div id="accordion-seed" class="accordion-content">
+                    <input type="number" id="seed-input" class="seed-input" value="12345" onchange="updateSeed()">
+                    <div class="seed-controls">
+                        <button class="button secondary" onclick="previousSeed()">← Prev</button>
+                        <button class="button secondary" onclick="nextSeed()">Next →</button>
+                    </div>
+                    <button class="button tertiary regen-button" onclick="randomSeedAndUpdate()">↻ Random</button>
+                    <input type="number" id="param-seed-input" class="seed-input" value="31415" onchange="updateParamSeed()">
+                    <div class="seed-controls">
+                        <button class="button secondary" onclick="previousParamSeed()">← Param Prev</button>
+                        <button class="button secondary" onclick="nextParamSeed()">Param Next →</button>
+                    </div>
+                    <button class="button tertiary regen-button" onclick="randomParamSeedAndUpdate()">↻ Random Params</button>
+                </div>
+            </div>
+
+            <!-- Parameters Section (CUSTOMIZE THIS FOR YOUR ART) -->
+            <div class="control-section accordion-section" data-accordion="params">
+                <div class="accordion-header" onclick="toggleAccordion('params')">
+                    <h3>Parameters</h3>
+                    <button id="accordion-toggle-params" class="accordion-toggle" type="button" onclick="event.stopPropagation(); toggleAccordion('params')" aria-expanded="true">−</button>
+                </div>
+                <div id="accordion-params" class="accordion-content">
+                <!-- Ribbon Count -->
+                <div class="control-group">
+                    <label>Ribbon Count</label>
+                    <div class="slider-container">
+                        <input type="range" id="ribbonCount" min="30" max="220" step="5" value="90" oninput="updateParam('ribbonCount', this.value)">
+                        <span class="value-display" id="ribbonCount-value">90</span>
+                    </div>
+                </div>
+
+                <!-- Min Segments -->
+                <div class="control-group">
+                    <label>Min Segments</label>
+                    <div class="slider-container">
+                        <input type="range" id="minSegments" min="8" max="120" step="1" value="28" oninput="updateParam('minSegments', this.value)">
+                        <span class="value-display" id="minSegments-value">28</span>
+                    </div>
+                </div>
+
+                <!-- Max Segments -->
+                <div class="control-group">
+                    <label>Max Segments</label>
+                    <div class="slider-container">
+                        <input type="range" id="maxSegments" min="20" max="280" step="1" value="170" oninput="updateParam('maxSegments', this.value)">
+                        <span class="value-display" id="maxSegments-value">170</span>
+                    </div>
+                </div>
+
+                <!-- Segment Length -->
+                <div class="control-group">
+                    <label>Segment Length</label>
+                    <div class="slider-container">
+                        <input type="range" id="stepSize" min="10" max="46" step="1" value="22" oninput="updateParam('stepSize', this.value)">
+                        <span class="value-display" id="stepSize-value">22</span>
+                    </div>
+                </div>
+
+                <!-- Base Width -->
+                <div class="control-group">
+                    <label>Base Width</label>
+                    <div class="slider-container">
+                        <input type="range" id="baseWidth" min="4" max="28" step="1" value="10" oninput="updateParam('baseWidth', this.value)">
+                        <span class="value-display" id="baseWidth-value">10</span>
+                    </div>
+                </div>
+
+                <!-- Width Jitter -->
+                <div class="control-group">
+                    <label>Width Jitter</label>
+                    <div class="slider-container">
+                        <input type="range" id="widthJitter" min="0" max="4" step="0.05" value="0.45" oninput="updateParam('widthJitter', this.value)">
+                        <span class="value-display" id="widthJitter-value">0.45</span>
+                    </div>
+                </div>
+
+                <!-- Noise Scale -->
+                <div class="control-group">
+                    <label>Noise Scale</label>
+                    <div class="slider-container">
+                        <input type="range" id="noiseScale" min="0.0008" max="0.009" step="0.0001" value="0.0028" oninput="updateParam('noiseScale', this.value)">
+                        <span class="value-display" id="noiseScale-value">0.0028</span>
+                    </div>
+                </div>
+
+                <!-- Field Twist -->
+                <div class="control-group">
+                    <label>Field Twist</label>
+                    <div class="slider-container">
+                        <input type="range" id="fieldTwist" min="0.6" max="3.0" step="0.1" value="1.4" oninput="updateParam('fieldTwist', this.value)">
+                        <span class="value-display" id="fieldTwist-value">1.4</span>
+                    </div>
+                </div>
+
+                <!-- Angle Jitter -->
+                <div class="control-group">
+                    <label>Angle Jitter</label>
+                    <div class="slider-container">
+                        <input type="range" id="angleJitter" min="0" max="0.3" step="0.01" value="0.04" oninput="updateParam('angleJitter', this.value)">
+                        <span class="value-display" id="angleJitter-value">0.04</span>
+                    </div>
+                </div>
+
+                <!-- Spacing -->
+                <div class="control-group">
+                    <label>Spacing</label>
+                    <div class="slider-container">
+                        <input type="range" id="spacing" min="1" max="16" step="1" value="5" oninput="updateParam('spacing', this.value)">
+                        <span class="value-display" id="spacing-value">5</span>
+                    </div>
+                </div>
+
+                <!-- Margin -->
+                <div class="control-group">
+                    <label>Margin</label>
+                    <div class="slider-container">
+                        <input type="range" id="margin" min="20" max="120" step="1" value="36" oninput="updateParam('margin', this.value)">
+                        <span class="value-display" id="margin-value">36</span>
+                    </div>
+                </div>
+
+                <!-- Grain -->
+                <div class="control-group">
+                    <label>Grain</label>
+                    <div class="slider-container">
+                        <input type="range" id="grain" min="1000" max="16000" step="250" value="7000" oninput="updateParam('grain', this.value)">
+                        <span class="value-display" id="grain-value">7000</span>
+                    </div>
+                </div>
+                </div>
+            </div>
+
+            <!-- Colors Section (OPTIONAL - CUSTOMIZE OR REMOVE) -->
+            <div class="control-section accordion-section" data-accordion="colors">
+                <div class="accordion-header" onclick="toggleAccordion('colors')">
+                    <h3>Colors</h3>
+                    <button id="accordion-toggle-colors" class="accordion-toggle" type="button" onclick="event.stopPropagation(); toggleAccordion('colors')" aria-expanded="true">−</button>
+                </div>
+                <div id="accordion-colors" class="accordion-content">
+                <!-- Color 1 -->
+                <div class="color-group">
+                    <label>Tone 1</label>
+                    <div class="color-picker-container">
+                        <input type="color" id="color1" value="#e8e0cd" onchange="updateColor('color1', this.value)">
+                        <span class="color-value" id="color1-value">#e8e0cd</span>
+                    </div>
+                </div>
+
+                <!-- Color 2 -->
+                <div class="color-group">
+                    <label>Tone 2</label>
+                    <div class="color-picker-container">
+                        <input type="color" id="color2" value="#ca6a4a" onchange="updateColor('color2', this.value)">
+                        <span class="color-value" id="color2-value">#ca6a4a</span>
+                    </div>
+                </div>
+
+                <!-- Color 3 -->
+                <div class="color-group">
+                    <label>Tone 3</label>
+                    <div class="color-picker-container">
+                        <input type="color" id="color3" value="#6b7a3d" onchange="updateColor('color3', this.value)">
+                        <span class="color-value" id="color3-value">#6b7a3d</span>
+                    </div>
+                </div>
+
+                <!-- Color 4 -->
+                <div class="color-group">
+                    <label>Tone 4</label>
+                    <div class="color-picker-container">
+                        <input type="color" id="color4" value="#1f252b" onchange="updateColor('color4', this.value)">
+                        <span class="color-value" id="color4-value">#1f252b</span>
+                    </div>
+                </div>
+                <button class="button secondary regen-button" onclick="randomPaletteAndUpdate()">Random Palette</button>
+                </div>
+            </div>
+
+            <!-- Actions Section (ALWAYS KEEP THIS) -->
+            <div class="control-section">
+                <h3>Actions</h3>
+                <div class="button-row">
+                    <button class="button secondary" onclick="initializeSystem()">Regenerate</button>
+                    <button class="button" onclick="resetParameters()">Reset</button>
+                </div>
+                <div class="action-stack">
+                    <button id="gallery-btn" class="button secondary" onclick="generateSeedGallery()">Gallery 1-100</button>
+                    <button id="param-gallery-btn" class="button secondary" onclick="generateParamSeedGallery()">Param Gallery 1-100</button>
+                    <button class="button tertiary" onclick="downloadPNG()">Download PNG</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Canvas Area -->
+        <div class="canvas-area">
+            <div id="canvas-container">
+                <div class="loading">Initializing generative art...</div>
+            </div>
+            <div id="gallery-panel">
+                <div class="gallery-head">
+                    <div class="gallery-title">Seed Gallery 1-100</div>
+                    <button class="button small" onclick="toggleSeedGallery(false)">Hide</button>
+                </div>
+                <div class="gallery-status" id="gallery-status">Click "Gallery 1-100" to generate previews.</div>
+                <div class="gallery-grid" id="gallery-grid"></div>
+            </div>
+            <div id="param-gallery-panel">
+                <div class="gallery-head">
+                    <div class="gallery-title">Param Seed Gallery 1-100</div>
+                    <button class="button small" onclick="toggleParamGallery(false)">Hide</button>
+                </div>
+                <div class="gallery-status" id="param-gallery-status">Click "Param Gallery 1-100" to generate previews.</div>
+                <div class="gallery-grid" id="param-gallery-grid"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ═══════════════════════════════════════════════════════════════════════
+        // GENERATIVE ART PARAMETERS - CUSTOMIZE FOR YOUR ALGORITHM
+        // ═══════════════════════════════════════════════════════════════════════
+
+        let params = {
+            seed: 12345,
+            paramSeed: 31415,
+            ribbonCount: 90,
+            minSegments: 28,
+            maxSegments: 170,
+            stepSize: 22,
+            baseWidth: 10,
+            widthJitter: 0.45,
+            noiseScale: 0.0028,
+            fieldTwist: 1.4,
+            angleJitter: 0.04,
+            spacing: 5,
+            margin: 36,
+            grain: 7000,
+            colorPalette: ['#e8e0cd', '#ca6a4a', '#6b7a3d', '#1f252b']
+        };
+
+        let defaultParams = JSON.parse(JSON.stringify(params));
+        const curatedPalettes = [
+            ['#f2ece1', '#d86c52', '#4b6a8a', '#222831'],
+            ['#ede3d4', '#be5a38', '#2a5c7a', '#1a2127'],
+            ['#f4efe4', '#bf7b3f', '#6d7e4f', '#2a2f25'],
+            ['#ece6d8', '#a7583c', '#596e79', '#1f2428'],
+            ['#efe8dc', '#cc6f3c', '#4b768e', '#1d2a30'],
+            ['#f1e7d8', '#9f4e35', '#3e6c63', '#1f2521'],
+            ['#f3eadf', '#bb5d4f', '#6a667e', '#25242b'],
+            ['#ece3d8', '#a95a47', '#4d6475', '#1f232a'],
+            ['#f0e9dd', '#ce7b4f', '#55727b', '#242a2b'],
+            ['#f5efe5', '#c1644f', '#5f667a', '#27242c'],
+            ['#efe6d6', '#b36a2e', '#5d7a8d', '#1f262d'],
+            ['#eee5d9', '#c35e52', '#4e7b6f', '#1f2623'],
+            ['#efe8da', '#ad6847', '#50658a', '#20252e'],
+            ['#f4ede0', '#cc6e45', '#5d8362', '#252a24'],
+            ['#f2e9d9', '#ad5646', '#6b7489', '#242630'],
+            ['#eee6d9', '#c87258', '#436f7d', '#21282c'],
+            ['#efe7d7', '#bf6a44', '#6b7a3d', '#202622'],
+            ['#f2ecdf', '#a75943', '#7b8542', '#232923'],
+            ['#ece4d5', '#c5763f', '#5f7238', '#1f2721']
+        ];
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // P5.JS GENERATIVE ART ALGORITHM - REPLACE WITH YOUR VISION
+        // ═══════════════════════════════════════════════════════════════════════
+
+        let flowField = new Float32Array(0);
+        let fieldCols = 0;
+        let fieldRows = 0;
+        let fieldCell = 28;
+        let occupancy = new Uint8Array(0);
+        let occCols = 0;
+        let occRows = 0;
+        let occCell = 8;
+        let palette = [];
+        let mainCanvas;
+        let isGeneratingGallery = false;
+        let isGeneratingParamGallery = false;
+        const tuneableControls = [
+            'ribbonCount',
+            'minSegments',
+            'maxSegments',
+            'stepSize',
+            'baseWidth',
+            'widthJitter',
+            'noiseScale',
+            'fieldTwist',
+            'angleJitter',
+            'spacing',
+            'margin',
+            'grain'
+        ];
+        const integerParams = new Set([
+            'ribbonCount',
+            'minSegments',
+            'maxSegments',
+            'stepSize',
+            'baseWidth',
+            'spacing',
+            'margin',
+            'grain'
+        ]);
+
+        function setup() {
+            mainCanvas = createCanvas(1200, 1200);
+            mainCanvas.parent('canvas-container');
+            noLoop();
+            initializeSystem();
+
+            // Remove loading message
+            document.querySelector('.loading').style.display = 'none';
+        }
+
+        function initializeSystem() {
+            randomSeed(params.seed);
+            noiseSeed(params.seed);
+            background(247, 244, 236);
+
+            palette = params.colorPalette.map((hex) => color(hex));
+            generateFlowField();
+            initializeOccupancy();
+            drawRibbonField();
+            drawGrain();
+        }
+
+        function generateFlowField() {
+            fieldCols = floor(width / fieldCell) + 2;
+            fieldRows = floor(height / fieldCell) + 2;
+            flowField = new Float32Array(fieldCols * fieldRows);
+
+            const seedShift = params.seed * 0.00037;
+            for (let y = 0; y < fieldRows; y++) {
+                for (let x = 0; x < fieldCols; x++) {
+                    const nx = (x * fieldCell) * params.noiseScale + seedShift;
+                    const ny = (y * fieldCell) * params.noiseScale - seedShift;
+                    const coarse = noise(nx, ny);
+                    const fine = noise(nx * 2.4 + 17.2, ny * 2.4 - 6.9);
+                    const bend = map(fine, 0, 1, -PI / 2.5, PI / 2.5);
+                    const angle = coarse * TWO_PI * params.fieldTwist + bend;
+                    flowField[x + y * fieldCols] = angle;
+                }
+            }
+        }
+
+        function draw() {
+            // Static composition; rendered on updates.
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // GEOMETRY + FIELD HELPERS
+        // ═══════════════════════════════════════════════════════════════════════
+
+        function angleAtGrid(x, y) {
+            return flowField[x + y * fieldCols];
+        }
+
+        function sampleFlowAngle(x, y) {
+            const gx = constrain(x / fieldCell, 0, fieldCols - 1.001);
+            const gy = constrain(y / fieldCell, 0, fieldRows - 1.001);
+            const x0 = floor(gx);
+            const y0 = floor(gy);
+            const x1 = min(x0 + 1, fieldCols - 1);
+            const y1 = min(y0 + 1, fieldRows - 1);
+            const tx = gx - x0;
+            const ty = gy - y0;
+
+            const a00 = angleAtGrid(x0, y0);
+            const a10 = angleAtGrid(x1, y0);
+            const a01 = angleAtGrid(x0, y1);
+            const a11 = angleAtGrid(x1, y1);
+
+            let vx = 0;
+            let vy = 0;
+
+            function blend(angle, weight) {
+                vx += cos(angle) * weight;
+                vy += sin(angle) * weight;
+            }
+
+            blend(a00, (1 - tx) * (1 - ty));
+            blend(a10, tx * (1 - ty));
+            blend(a01, (1 - tx) * ty);
+            blend(a11, tx * ty);
+
+            return atan2(vy, vx);
+        }
+
+        function initializeOccupancy() {
+            occCell = max(4, floor(params.spacing * 0.7));
+            occCols = floor(width / occCell) + 1;
+            occRows = floor(height / occCell) + 1;
+            occupancy = new Uint8Array(occCols * occRows);
+        }
+
+        function markDisk(x, y, radius) {
+            const cx = floor(x / occCell);
+            const cy = floor(y / occCell);
+            const rr = ceil(radius / occCell);
+
+            for (let oy = -rr; oy <= rr; oy++) {
+                const yy = cy + oy;
+                if (yy < 0 || yy >= occRows) {
+                    continue;
+                }
+
+                for (let ox = -rr; ox <= rr; ox++) {
+                    const xx = cx + ox;
+                    if (xx < 0 || xx >= occCols) {
+                        continue;
+                    }
+
+                    const sampleX = (xx + 0.5) * occCell;
+                    const sampleY = (yy + 0.5) * occCell;
+                    if (dist(sampleX, sampleY, x, y) <= radius + occCell * 0.6) {
+                        occupancy[xx + yy * occCols] = 1;
+                    }
+                }
+            }
+        }
+
+        function isOccupied(x, y, radius) {
+            const cx = floor(x / occCell);
+            const cy = floor(y / occCell);
+            const rr = ceil(radius / occCell);
+
+            for (let oy = -rr; oy <= rr; oy++) {
+                const yy = cy + oy;
+                if (yy < 0 || yy >= occRows) {
+                    continue;
+                }
+
+                for (let ox = -rr; ox <= rr; ox++) {
+                    const xx = cx + ox;
+                    if (xx < 0 || xx >= occCols) {
+                        continue;
+                    }
+
+                    if (occupancy[xx + yy * occCols] === 1) {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        function markSegment(x1, y1, x2, y2, radius) {
+            const segmentDistance = dist(x1, y1, x2, y2);
+            const steps = max(2, ceil(segmentDistance / (occCell * 0.7)));
+            for (let i = 0; i <= steps; i++) {
+                const t = i / steps;
+                markDisk(lerp(x1, x2, t), lerp(y1, y2, t), radius);
+            }
+        }
+
+        function insideMargin(x, y) {
+            return x > params.margin && x < width - params.margin && y > params.margin && y < height - params.margin;
+        }
+
+        function findRibbonStart() {
+            for (let i = 0; i < 200; i++) {
+                const x = random(params.margin, width - params.margin);
+                const y = random(params.margin, height - params.margin);
+                if (!isOccupied(x, y, params.baseWidth * 0.65 + params.spacing)) {
+                    return createVector(x, y);
+                }
+            }
+            return null;
+        }
+
+        function chooseRibbonColor(index) {
+            const n = noise(index * 0.13 + params.seed * 0.00017);
+            if (n < 0.28) {
+                return palette[0];
+            }
+            if (n < 0.58) {
+                return palette[1];
+            }
+            if (n < 0.82) {
+                return palette[2];
+            }
+            return palette[3];
+        }
+
+        function drawRibbonSegment(start, end, widthA, widthB, fillColor) {
+            const strokeWidth = max(1.5, (widthA + widthB) * 0.5);
+            stroke(fillColor);
+            strokeWeight(strokeWidth);
+            strokeCap(SQUARE);
+            line(start.x, start.y, end.x, end.y);
+            noStroke();
+        }
+
+        function drawRibbonField() {
+            for (let i = 0; i < params.ribbonCount; i++) {
+                const start = findRibbonStart();
+                if (!start) {
+                    continue;
+                }
+
+                let segmentCount = floor(random(params.minSegments, params.maxSegments + 1));
+                let widthNow = params.baseWidth * random(0.85, 1.2);
+                let heading = sampleFlowAngle(start.x, start.y) + random(-0.18, 0.18);
+                let pos = start.copy();
+                const ribbonColor = color(chooseRibbonColor(i));
+                ribbonColor.setAlpha(238);
+
+                for (let step = 0; step < segmentCount; step++) {
+                    const flowHeading = sampleFlowAngle(pos.x, pos.y);
+                    const delta = atan2(sin(flowHeading - heading), cos(flowHeading - heading));
+                    heading += constrain(delta, -0.45, 0.45) * 0.9 + random(-params.angleJitter, params.angleJitter);
+
+                    const distanceStep = params.stepSize * random(0.95, 1.3);
+                    const nextX = pos.x + cos(heading) * distanceStep;
+                    const nextY = pos.y + sin(heading) * distanceStep;
+
+                    if (!insideMargin(nextX, nextY)) {
+                        break;
+                    }
+
+                    const nextWidth = max(2, widthNow + random(-params.widthJitter, params.widthJitter));
+                    const clearance = max(widthNow, nextWidth) * 0.42 + params.spacing;
+                    if (isOccupied(nextX, nextY, clearance)) {
+                        break;
+                    }
+
+                    const next = createVector(nextX, nextY);
+                    drawRibbonSegment(pos, next, widthNow, nextWidth, ribbonColor);
+                    markSegment(pos.x, pos.y, next.x, next.y, clearance * 0.78);
+
+                    pos = next;
+                    widthNow = nextWidth;
+                }
+            }
+        }
+
+        function drawGrain() {
+            stroke(18, 20);
+            strokeWeight(1);
+            for (let i = 0; i < params.grain; i++) {
+                point(random(width), random(height));
+            }
+            noStroke();
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // UI CONTROL HANDLERS - CUSTOMIZE FOR YOUR PARAMETERS
+        // ═══════════════════════════════════════════════════════════════════════
+
+        function updateParam(paramName, value) {
+            if (integerParams.has(paramName)) {
+                params[paramName] = parseInt(value);
+            } else {
+                params[paramName] = parseFloat(value);
+            }
+
+            if (paramName === 'minSegments' && params.minSegments > params.maxSegments) {
+                params.maxSegments = params.minSegments;
+                document.getElementById('maxSegments').value = params.maxSegments;
+                document.getElementById('maxSegments-value').textContent = params.maxSegments;
+            }
+
+            if (paramName === 'maxSegments' && params.maxSegments < params.minSegments) {
+                params.minSegments = params.maxSegments;
+                document.getElementById('minSegments').value = params.minSegments;
+                document.getElementById('minSegments-value').textContent = params.minSegments;
+            }
+
+            document.getElementById(`${paramName}-value`).textContent = formatValue(paramName, params[paramName]);
+            initializeSystem();
+        }
+
+        function updateColor(colorId, value) {
+            const colorIndex = parseInt(colorId.replace('color', ''), 10) - 1;
+            params.colorPalette[colorIndex] = value;
+            document.getElementById(`${colorId}-value`).textContent = value;
+            initializeSystem();
+        }
+
+        function createSeededRng(seed) {
+            let state = seed >>> 0;
+            if (state === 0) {
+                state = 1;
+            }
+
+            return function() {
+                state += 0x6D2B79F5;
+                let t = state;
+                t = Math.imul(t ^ (t >>> 15), t | 1);
+                t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+                return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+            };
+        }
+
+        function randomRange(rng, minValue, maxValue) {
+            return minValue + (maxValue - minValue) * rng();
+        }
+
+        function randomInt(rng, minValue, maxValue) {
+            return Math.floor(randomRange(rng, minValue, maxValue + 1));
+        }
+
+        function quantizeToStep(value, step, decimals) {
+            return Number((Math.round(value / step) * step).toFixed(decimals));
+        }
+
+        function generateParamsFromParamSeed(paramSeed) {
+            const rng = createSeededRng(paramSeed);
+            const minSegments = randomInt(rng, 18, 64);
+            const maxSegments = randomInt(rng, Math.max(minSegments + 36, 90), 260);
+            const paletteChoice = curatedPalettes[randomInt(rng, 0, curatedPalettes.length - 1)];
+
+            return {
+                ribbonCount: randomInt(rng, 9, 32) * 5,
+                minSegments,
+                maxSegments,
+                stepSize: randomInt(rng, 14, 40),
+                baseWidth: randomInt(rng, 6, 16),
+                widthJitter: quantizeToStep(randomRange(rng, 0.2, 1.2), 0.05, 2),
+                noiseScale: quantizeToStep(randomRange(rng, 0.0012, 0.0048), 0.0001, 4),
+                fieldTwist: quantizeToStep(randomRange(rng, 0.9, 2.1), 0.1, 1),
+                angleJitter: quantizeToStep(randomRange(rng, 0.01, 0.09), 0.01, 2),
+                spacing: randomInt(rng, 2, 10),
+                margin: randomInt(rng, 24, 72),
+                grain: randomInt(rng, 10, 48) * 250,
+                colorPalette: [...paletteChoice]
+            };
+        }
+
+        function applyGeneratedParams(generated, shouldRender = true) {
+            for (const key of tuneableControls) {
+                params[key] = generated[key];
+            }
+            params.colorPalette = [...generated.colorPalette];
+
+            syncParameterControlsToUI();
+            applyPaletteToUI(params.colorPalette);
+
+            if (shouldRender) {
+                initializeSystem();
+            }
+        }
+
+        function syncParameterControlsToUI() {
+            for (const control of tuneableControls) {
+                document.getElementById(control).value = params[control];
+                document.getElementById(`${control}-value`).textContent = formatValue(control, params[control]);
+            }
+        }
+
+        function applyCurrentParamSeed(shouldRender = true) {
+            const generated = generateParamsFromParamSeed(params.paramSeed);
+            applyGeneratedParams(generated, shouldRender);
+        }
+
+        function applyPaletteToUI(paletteValues) {
+            for (let i = 0; i < 4; i++) {
+                const colorId = `color${i + 1}`;
+                document.getElementById(colorId).value = paletteValues[i];
+                document.getElementById(`${colorId}-value`).textContent = paletteValues[i];
+            }
+        }
+
+        function randomPaletteAndUpdate() {
+            const picked = curatedPalettes[floor(Math.random() * curatedPalettes.length)];
+            params.colorPalette = [...picked];
+            applyPaletteToUI(params.colorPalette);
+            initializeSystem();
+        }
+
+        function formatValue(paramName, value) {
+            if (integerParams.has(paramName)) {
+                return String(value);
+            }
+
+            if (paramName === 'noiseScale') {
+                return value.toFixed(4);
+            }
+
+            if (paramName === 'fieldTwist') {
+                return value.toFixed(1);
+            }
+
+            return value.toFixed(2);
+        }
+
+        function downloadPNG() {
+            saveCanvas(`ribbon-drift-seed-${params.seed}`, 'png');
+        }
+
+        function setAccordionState(sectionId, isOpen) {
+            const section = document.querySelector(`[data-accordion="${sectionId}"]`);
+            if (!section) {
+                return;
+            }
+
+            section.classList.toggle('collapsed', !isOpen);
+            const toggle = document.getElementById(`accordion-toggle-${sectionId}`);
+            if (toggle) {
+                toggle.textContent = isOpen ? '−' : '+';
+                toggle.setAttribute('aria-expanded', String(isOpen));
+            }
+        }
+
+        function toggleAccordion(sectionId) {
+            const section = document.querySelector(`[data-accordion="${sectionId}"]`);
+            if (!section) {
+                return;
+            }
+            setAccordionState(sectionId, section.classList.contains('collapsed'));
+        }
+
+        function expandAllAccordions() {
+            setAccordionState('seed', true);
+            setAccordionState('params', true);
+            setAccordionState('colors', true);
+        }
+
+        function collapseAllAccordions() {
+            setAccordionState('seed', false);
+            setAccordionState('params', false);
+            setAccordionState('colors', false);
+        }
+
+        function toggleSeedGallery(show) {
+            document.getElementById('gallery-panel').style.display = show ? 'block' : 'none';
+        }
+
+        function toggleParamGallery(show) {
+            document.getElementById('param-gallery-panel').style.display = show ? 'block' : 'none';
+        }
+
+        function setSeedGalleryStatus(message) {
+            document.getElementById('gallery-status').textContent = message;
+        }
+
+        function setParamGalleryStatus(message) {
+            document.getElementById('param-gallery-status').textContent = message;
+        }
+
+        function createGalleryThumb(label, dataUrl, onSelect) {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'gallery-thumb';
+            button.innerHTML = `<img src="${dataUrl}" alt="${label}"><span class="gallery-label">${label}</span>`;
+            button.onclick = onSelect;
+            return button;
+        }
+
+        async function generateSeedGallery() {
+            if (isGeneratingGallery || isGeneratingParamGallery || !mainCanvas) {
+                return;
+            }
+
+            isGeneratingGallery = true;
+            const button = document.getElementById('gallery-btn');
+            const grid = document.getElementById('gallery-grid');
+            const originalSeed = params.seed;
+            const thumbCanvas = document.createElement('canvas');
+            const thumbSize = 180;
+            const thumbContext = thumbCanvas.getContext('2d');
+            thumbCanvas.width = thumbSize;
+            thumbCanvas.height = thumbSize;
+
+            button.disabled = true;
+            button.textContent = 'Generating...';
+            grid.innerHTML = '';
+            toggleSeedGallery(true);
+            setSeedGalleryStatus('Generating previews 1/100...');
+
+            try {
+                for (let seed = 1; seed <= 100; seed++) {
+                    params.seed = seed;
+                    updateSeedDisplay();
+                    initializeSystem();
+
+                    thumbContext.clearRect(0, 0, thumbSize, thumbSize);
+                    thumbContext.drawImage(mainCanvas.elt, 0, 0, thumbSize, thumbSize);
+                    grid.appendChild(createGalleryThumb(`Seed ${seed}`, thumbCanvas.toDataURL('image/png'), function() {
+                        params.seed = seed;
+                        updateSeedDisplay();
+                        initializeSystem();
+                    }));
+                    setSeedGalleryStatus(`Generating previews ${seed}/100...`);
+
+                    if (seed % 4 === 0) {
+                        await new Promise((resolve) => setTimeout(resolve, 0));
+                    }
+                }
+            } finally {
+                params.seed = originalSeed;
+                updateSeedDisplay();
+                initializeSystem();
+                isGeneratingGallery = false;
+                button.disabled = false;
+                button.textContent = 'Regenerate Gallery';
+                setSeedGalleryStatus('Ready. Click any thumbnail to jump to that seed.');
+            }
+        }
+
+        async function generateParamSeedGallery() {
+            if (isGeneratingGallery || isGeneratingParamGallery || !mainCanvas) {
+                return;
+            }
+
+            isGeneratingParamGallery = true;
+            const button = document.getElementById('param-gallery-btn');
+            const grid = document.getElementById('param-gallery-grid');
+            const originalParams = JSON.parse(JSON.stringify(params));
+            const thumbCanvas = document.createElement('canvas');
+            const thumbSize = 180;
+            const thumbContext = thumbCanvas.getContext('2d');
+            thumbCanvas.width = thumbSize;
+            thumbCanvas.height = thumbSize;
+
+            button.disabled = true;
+            button.textContent = 'Generating...';
+            grid.innerHTML = '';
+            toggleParamGallery(true);
+            setParamGalleryStatus('Generating param previews 1/100...');
+
+            try {
+                for (let paramSeed = 1; paramSeed <= 100; paramSeed++) {
+                    params.paramSeed = paramSeed;
+                    updateParamSeedDisplay();
+                    applyCurrentParamSeed(true);
+
+                    thumbContext.clearRect(0, 0, thumbSize, thumbSize);
+                    thumbContext.drawImage(mainCanvas.elt, 0, 0, thumbSize, thumbSize);
+                    grid.appendChild(createGalleryThumb(`P ${paramSeed}`, thumbCanvas.toDataURL('image/png'), function() {
+                        params.paramSeed = paramSeed;
+                        updateParamSeedDisplay();
+                        applyCurrentParamSeed(true);
+                    }));
+                    setParamGalleryStatus(`Generating param previews ${paramSeed}/100...`);
+
+                    if (paramSeed % 4 === 0) {
+                        await new Promise((resolve) => setTimeout(resolve, 0));
+                    }
+                }
+            } finally {
+                params = originalParams;
+                syncParameterControlsToUI();
+                applyPaletteToUI(params.colorPalette);
+                updateSeedDisplay();
+                updateParamSeedDisplay();
+                initializeSystem();
+                isGeneratingParamGallery = false;
+                button.disabled = false;
+                button.textContent = 'Regenerate Param Gallery';
+                setParamGalleryStatus('Ready. Click any thumbnail to load that parameter seed.');
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // SEED CONTROL FUNCTIONS - ALWAYS KEEP THESE
+        // ═══════════════════════════════════════════════════════════════════════
+
+        function updateSeedDisplay() {
+            document.getElementById('seed-input').value = params.seed;
+        }
+
+        function updateParamSeedDisplay() {
+            document.getElementById('param-seed-input').value = params.paramSeed;
+        }
+
+        function updateSeed() {
+            let input = document.getElementById('seed-input');
+            let newSeed = parseInt(input.value);
+            if (newSeed && newSeed > 0) {
+                params.seed = newSeed;
+                initializeSystem();
+            } else {
+                // Reset to current seed if invalid
+                updateSeedDisplay();
+            }
+        }
+
+        function previousSeed() {
+            params.seed = Math.max(1, params.seed - 1);
+            updateSeedDisplay();
+            initializeSystem();
+        }
+
+        function nextSeed() {
+            params.seed = params.seed + 1;
+            updateSeedDisplay();
+            initializeSystem();
+        }
+
+        function randomSeedAndUpdate() {
+            params.seed = Math.floor(Math.random() * 999999) + 1;
+            updateSeedDisplay();
+            initializeSystem();
+        }
+
+        function updateParamSeed() {
+            let input = document.getElementById('param-seed-input');
+            let newParamSeed = parseInt(input.value);
+            if (newParamSeed && newParamSeed > 0) {
+                params.paramSeed = newParamSeed;
+                applyCurrentParamSeed(true);
+            } else {
+                updateParamSeedDisplay();
+            }
+        }
+
+        function previousParamSeed() {
+            params.paramSeed = Math.max(1, params.paramSeed - 1);
+            updateParamSeedDisplay();
+            applyCurrentParamSeed(true);
+        }
+
+        function nextParamSeed() {
+            params.paramSeed = params.paramSeed + 1;
+            updateParamSeedDisplay();
+            applyCurrentParamSeed(true);
+        }
+
+        function randomParamSeedAndUpdate() {
+            params.paramSeed = Math.floor(Math.random() * 999999) + 1;
+            updateParamSeedDisplay();
+            applyCurrentParamSeed(true);
+        }
+
+        function resetParameters() {
+            params = JSON.parse(JSON.stringify(defaultParams));
+            syncParameterControlsToUI();
+            applyPaletteToUI(params.colorPalette);
+
+            updateSeedDisplay();
+            updateParamSeedDisplay();
+            initializeSystem();
+        }
+
+        // Initialize UI on load
+        window.addEventListener('load', function() {
+            updateSeedDisplay();
+            updateParamSeedDisplay();
+        });
+    </script>
+</body>
+</html>
