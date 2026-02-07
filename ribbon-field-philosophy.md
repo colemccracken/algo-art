@@ -9,3 +9,5 @@ Color is not applied as paint but assigned as structural rhythm. Palettes move i
 Segmentation is the key expressive mechanism. Instead of uninterrupted strokes, each ribbon is broken into linked slabs whose corners are softly rounded and whose widths breathe over distance. This converts line into architecture and gives each trajectory a printed, cut-paper tactility. The geometry should reflect a master-level implementation where segment length, width jitter, and corner handling are calibrated with precision so forms feel handcrafted even when generated.
 
 Variation is driven by seeds, but seeds are treated as alternate universes under identical laws. The same seed must always produce the same composition, and neighboring seeds should reveal meaningful stylistic drift rather than total reset. The final work should present itself as a living system refined through patient, meticulous craftsmanship: controlled chaos shaped by expert constraint, where beauty emerges from process with uncompromising technical discipline.
+
+Deployment verification note: main branch auto-deploy validation commit on 2026-02-07.
